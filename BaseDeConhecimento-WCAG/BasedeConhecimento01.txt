@@ -1,0 +1,34 @@
+Diretrizes de Acessibilidade para Conteúdo Web (WCAG 2.1) - Resumo em Português
+
+1. Perceptível
+- Texto Alternativo: Forneça texto alternativo para todas as imagens, ícones e gráficos. Exemplo: alt="Foto de uma mulher usando notebook".
+- Conteúdo em Mídia: Legendas devem estar presentes em vídeos. Transcrições devem ser fornecidas para áudios.
+- Contraste: O contraste entre o texto e o fundo deve ser de pelo menos 4.5:1. Exemplo: texto preto sobre fundo branco.
+- Texto Redimensionável: O usuário deve conseguir aumentar o tamanho do texto sem perder conteúdo ou funcionalidade.
+- Evite Apenas Cor: Não use apenas a cor para transmitir informações. Use ícones, padrões ou texto adicional.
+
+2. Operável
+- Acessível por Teclado: Todos os elementos e funcionalidades devem ser navegáveis por teclado. Evite funções dependentes do mouse.
+- Tempo Suficiente: Usuários devem ter tempo suficiente para ler e interagir com o conteúdo (exemplo: formulários não devem expirar sem aviso).
+- Evite Conteúdo Piscante: Evite conteúdos que pisquem mais de 3 vezes por segundo. Pode causar desconforto ou convulsões.
+- Navegação Clara: Forneça formas claras de navegar no site, como menus, mapas do site e links consistentes.
+- Foco Visível: Elementos que recebem foco (como botões ou campos de formulário) devem estar visivelmente destacados.
+
+3. Compreensível
+- Linguagem Clara: Use linguagem simples e direta. Evite jargões ou termos técnicos sem explicação.
+- Previsibilidade: Componentes devem se comportar de forma esperada. Exemplo: um botão "Enviar" não deve apagar dados.
+- Ajuda e Sugestões: Forneça dicas, sugestões e mensagens de erro claras nos formulários. Exemplo: "Por favor, insira um e-mail válido".
+
+4. Robusto
+- Compatível com Tecnologias Assistivas: O código HTML deve ser semanticamente correto e utilizável por leitores de tela.
+- Marcação Clara: Use corretamente elementos como `<label>` para campos de formulário, `<header>`, `<main>` e `<footer>` para estruturar a página.
+
+Exemplos de Boas Práticas:
+- Botões com texto descritivo (evite apenas "Clique aqui").
+- Campos de formulário com rótulos (ex: "Nome completo" ao lado da caixa de texto).
+- Alertas visuais acompanhados por mensagens de texto.
+- Links com textos que descrevem claramente o destino.
+
+Fonte original: https://www.w3.org/WAI/WCAG21/quickref/
+
+Traduzido e adaptado para IA com foco em validação de protótipos em português.
