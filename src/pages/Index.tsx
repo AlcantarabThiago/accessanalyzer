@@ -65,7 +65,7 @@ const Index = () => {
       setUploadError(null);
 
       // --- NOVOS LOGS E CORREÇÃO DE URL ---
-      const apiUrl = "http://host.docker.internal:5678/webhook/acessibilidade";
+      const apiUrl = "https://primary-production-1e940.up.railway.app/webhook/acessibilidade";
       console.log("Iniciando upload para URL:", apiUrl);
       console.log("Nome do arquivo a ser enviado:", uploadedImage.name);
       console.log("Tamanho do arquivo:", uploadedImage.size, "bytes");

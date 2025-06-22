@@ -1,0 +1,368 @@
+{
+  "name": "ProjetoTera-AnalisaPrototipo",
+  "nodes": [
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://vision.googleapis.com/v1/images:annotate?key=AIzaSyCiMTXEVCa9e3L3cdiDmSRqw_1Flj_3tP4",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"requests\": [\n    {\n      \"image\": {\n        \"content\": \"{{ $json.imageBase64 }}\"\n      },\n      \"features\": [\n        {\n          \"type\": \"TEXT_DETECTION\"\n        }\n      ]\n    }\n  ]\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -140,
+        -420
+      ],
+      "id": "7afdbaa4-b4c1-4c45-a1e6-4649ceeed972",
+      "name": "OCR com GoogleCloudVision"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Acessa o item de entrada\nconst input = $input.item;\n\n// Acessa o conteúdo binário dentro do campo 'file0'\nconst binaryData = input.binary.file0.data;\n\n// Retorna a base64 no campo imageBase64\nreturn {\n  json: {\n    imageBase64: binaryData\n  }\n};\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -360,
+        -420
+      ],
+      "id": "c253bfc5-6a62-4cb6-8678-219d04013a07",
+      "name": "TransformaIMGemBase64",
+      "executeOnce": false,
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "acessibilidade",
+        "responseMode": "responseNode",
+        "options": {
+          "binaryPropertyName": "file"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -800,
+        -320
+      ],
+      "id": "34f2cc2e-c44c-4ed3-afc0-1758f8150baf",
+      "name": "Webhook - recebe iamgem do frontend",
+      "webhookId": "a2e62abb-5983-4936-907c-0d2020b4df47"
+    },
+    {
+      "parameters": {
+        "model": "mistralai/mistral-7b-instruct:free",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        608,
+        -100
+      ],
+      "id": "30b82d42-eb97-46f3-a9d1-8eedf512478d",
+      "name": "OpenRouter Chat Model",
+      "credentials": {
+        "openRouterApi": {
+          "id": "QNocg4yxjHuYllXu",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const ocrTexto = $json[\"responses\"]?.[0]?.fullTextAnnotation?.text || \"Texto não reconhecido\";\nconst wcagTexto = $json[\"wcagTexto\"] || \"WCAG não carregado\";\n\nconst promptFinal = `\nVocê é um especialista em acessibilidade digital com foco nas diretrizes WCAG.\n\nAnalise o seguinte texto extraído de um protótipo de sistema (OCR):\n\n\"${ocrTexto}\"\n\nCom base no conhecimento abaixo (WCAG), aponte melhorias que podem ser feitas nesse protótipo para garantir maior acessibilidade:\n\n\"${wcagTexto}\"\n\nSeja objetivo e claro nas recomendações.\n\n**Importante:** responda sempre em **português do Brasil**.\n`;\n\nreturn [\n  {\n    json: {\n      prompt: promptFinal,\n      debug: {\n        ocrTexto,\n        wcagTexto\n      }\n    }\n  }\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        300,
+        -320
+      ],
+      "id": "99b67580-b2b4-4680-9318-ed0404872ba9",
+      "name": "MontaPromptFinal"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Verifica se a resposta do AI veio corretamente\nconst resposta = $json['output'] || 'Nenhuma resposta encontrada';\n\nreturn [\n  {\n    json: {\n      mensagem: resposta\n    }\n  }\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        896,
+        -320
+      ],
+      "id": "40b6552c-6e6e-497e-9468-627389c8f66d",
+      "name": "EntregaAnalise"
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "queryString": "BaseDeConhecimento01.txt",
+        "filter": {},
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -580,
+        -220
+      ],
+      "id": "e2bd65e7-1f3e-4060-a8aa-ede4e439abc4",
+      "name": "Google Drive",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "dmjqrhzkWe2mYs1k",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.1,
+      "position": [
+        80,
+        -320
+      ],
+      "id": "81f736b8-7225-4225-b8d9-a3818cf1f549",
+      "name": "Merge1"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json[\"prompt\"] }}\n",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.9,
+      "position": [
+        520,
+        -320
+      ],
+      "id": "9fb69f3c-0fd3-4586-8c63-be26d2e92aa9",
+      "name": "AI Agent1"
+    },
+    {
+      "parameters": {
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "http://localhost:5173"
+              },
+              {
+                "name": "Access-Control-Allow-Methods",
+                "value": "POST"
+              },
+              {
+                "name": "Access-Control-Allow-Headers",
+                "value": "Content-Type"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.2,
+      "position": [
+        1116,
+        -320
+      ],
+      "id": "0bd6faa8-0453-49cb-9640-46448267f06b",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "169lEqbC-KCMzd7MIZXEo4r0Y-8r5uxJ2",
+          "mode": "list",
+          "cachedResultName": "BasedeConhecimento01.txt",
+          "cachedResultUrl": "https://drive.google.com/file/d/169lEqbC-KCMzd7MIZXEo4r0Y-8r5uxJ2/view?usp=drivesdk"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -360,
+        -220
+      ],
+      "id": "573fbc22-33af-48b7-b871-38adc5128c9d",
+      "name": "Google Drive1",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "dmjqrhzkWe2mYs1k",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "text",
+        "destinationKey": "wcagTexto",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        -140,
+        -220
+      ],
+      "id": "1e532f55-3419-4d9f-9d27-d5e39b71b37f",
+      "name": "Extract from File"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "TransformaIMGemBase64": {
+      "main": [
+        [
+          {
+            "node": "OCR com GoogleCloudVision",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook - recebe iamgem do frontend": {
+      "main": [
+        [
+          {
+            "node": "TransformaIMGemBase64",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Google Drive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OCR com GoogleCloudVision": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MontaPromptFinal": {
+      "main": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "EntregaAnalise": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Drive": {
+      "main": [
+        [
+          {
+            "node": "Google Drive1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge1": {
+      "main": [
+        [
+          {
+            "node": "MontaPromptFinal",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent1": {
+      "main": [
+        [
+          {
+            "node": "EntregaAnalise",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Drive1": {
+      "main": [
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "2bb8013f-3cb0-4df8-9dc3-53c7b34f35ce",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "1033fccab1d2e7b77b31bca28a98fa1c87c0bf4a4d0d0637dcb08a7ebb5051ef"
+  },
+  "id": "yPg1h66dGECAjk8i",
+  "tags": []
+}
