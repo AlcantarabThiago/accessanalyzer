@@ -63,11 +63,19 @@ const Analysis = () => {
     let erroFinal = '';
 
     try {
-      const response = await fetch("https://primary-production-1e940.up.railway.app/webhook/acessibilidade", {
+        // Cria um FormData para enviar o arquivo
+        const formData = new FormData();
+        formData.append('file', image, image.name); // 'file' é o nome do campo binário que o n8n espera
+
+        const response = await fetch("https://primary-production-1e940.up.railway.app/webhook/acessibilidade", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ imagem: image.name || "Protótipo.png" })
-      });
+        // Com FormData, o navegador define o Content-Type automaticamente (multipart/form-data)
+        // Você NÃO deve definir 'Content-Type': 'multipart/form-data' manualmente aqui,
+        // pois o navegador precisa adicionar o 'boundary' correto.
+        // Se você usar axios, é similar. Com fetch, apenas remova o header.
+        // headers: { 'Content-Type': 'multipart/form-data' }, // <--- REMOVA ESTA LINHA OU COMENTE
+         body: formData // <--- ENVIE O FORMDATA AQUI
+     });
 
       if (!response.ok) {
         throw new Error(`Erro na API: ${response.status}`);
