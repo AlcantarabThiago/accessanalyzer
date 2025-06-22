@@ -63,7 +63,7 @@ const Analysis = () => {
     let erroFinal = '';
 
     try {
-      const response = await fetch("http://host.docker.internal:5678/webhook/acessibilidade", {
+      const response = await fetch("https://primary-production-1e940.up.railway.app/webhook/acessibilidade", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ imagem: image.name || "Protótipo.png" })
