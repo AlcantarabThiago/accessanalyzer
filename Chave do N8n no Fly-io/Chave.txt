@@ -1,0 +1,1 @@
+flyctl secrets set N8N_ENCRYPTION_KEY="A9f#z!wP8*qR7b$vG2hK5j@mN3cT6xYd" --app n8n-thiago-workflows

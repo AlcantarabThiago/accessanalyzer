@@ -67,7 +67,7 @@ const Analysis = () => {
         const formData = new FormData();
         formData.append('file', image, image.name); // 'file' é o nome do campo binário que o n8n espera
 
-        const response = await fetch("https://primary-production-1e940.up.railway.app/webhook/acessibilidade", {
+        const response = await fetch("https://aiagent.alcantaran8n.com.br/webhook/acessibilidade", {
         method: "POST",
         // Com FormData, o navegador define o Content-Type automaticamente (multipart/form-data)
         // Você NÃO deve definir 'Content-Type': 'multipart/form-data' manualmente aqui,
