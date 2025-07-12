@@ -247,10 +247,12 @@ const Result = () => {
                               </Badge>
                             </div>
                             <h4 className="font-semibold text-gray-900 mb-2">{suggestion.title}</h4>
-                            <div className="bg-gray-50 border rounded-lg p-3 mb-3">
+                            
+                            {/* <div className="bg-gray-50 border rounded-lg p-3 mb-3">
                               <h5 className="font-medium text-gray-900 mb-1">Problema identificado:</h5>
                               <p className="text-sm text-gray-600 whitespace-pre-wrap">{suggestion.description}</p>
                             </div>
+                            */}    
                             <div className="bg-green-50 border border-green-200 rounded-lg p-3">
                               <h5 className="font-medium text-green-900 mb-1">Ação recomendada:</h5>
                               <p className="text-sm text-green-800 whitespace-pre-wrap">{suggestion.improvement}</p>
