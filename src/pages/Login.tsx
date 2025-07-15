@@ -33,7 +33,7 @@ const Login = () => {
                   <Eye className="w-7 h-7 text-white" />
                 </div>
                 <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent">
-                  AccessAnalyzer
+                  DesignSense AI
                 </h1>
               </div>
               
@@ -117,7 +117,7 @@ const Login = () => {
                   Entre na sua conta
                 </CardTitle>
                 <p className="text-gray-600">
-                  Acesse o AccessAnalyzer e comece a criar interfaces mais inclusivas
+                  Acesse o DesignSense AI e comece a criar interfaces mais inclusivas
                 </p>
               </CardHeader>
               

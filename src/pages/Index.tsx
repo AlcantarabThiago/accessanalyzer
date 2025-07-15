@@ -152,7 +152,7 @@ const Index = () => {
                 <Eye className="w-6 h-6 text-white" />
               </div>
               <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent">
-                AccessAnalyzer
+                DesignSense AI
               </h1>
             </div>
             <Button 
