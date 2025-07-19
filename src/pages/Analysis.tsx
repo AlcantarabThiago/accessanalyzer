@@ -21,7 +21,7 @@ const Analysis = () => {
   const [progress, setProgress] = useState(0);
   const [currentAnalysis, setCurrentAnalysis] = useState('');
   const [imagemEnviada, setImagemEnviada] = useState<File | null>(null);
-  const hasAnalyzed = useRef(false); // <-- controle de repetição
+  const hasAnalyzed = useRef(false); // evita reanálise
 
   const analysisSteps = [
     { label: 'Carregando imagem...', description: 'Processando o protótipo enviado' },
@@ -36,7 +36,7 @@ const Analysis = () => {
   useEffect(() => {
     if (location.state?.image && !hasAnalyzed.current) {
       setImagemEnviada(location.state.image);
-      hasAnalyzed.current = true; // evita reanálise
+      hasAnalyzed.current = true;
       handleAnalysisStart(location.state.image);
     }
   }, [location.state]);
@@ -49,7 +49,7 @@ const Analysis = () => {
       await new Promise((r) => setTimeout(r, 800 + Math.random() * 600));
     }
 
-    let mensagemFinal = '';
+    let mensagemFinal = null;
     let erroFinal = '';
 
     try {
@@ -66,7 +66,7 @@ const Analysis = () => {
       }
 
       const result = await response.json();
-      mensagemFinal = result.mensagem || "Análise realizada, mas sem observações específicas.";
+      mensagemFinal = result?.mensagem ?? null;
     } catch (error: any) {
       console.error("Erro ao analisar:", error);
       erroFinal = error.message || "Erro desconhecido";

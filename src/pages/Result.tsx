@@ -34,61 +34,75 @@ interface UploadedFile {
   name: string;
 }
 
-// Interface para os dados esperados do `location.state`
 interface ResultState {
   image?: File;
-  mensagem?: string; // Mensagem geral da IA
-  erro?: string;    // Mensagem de erro, se a chamada à API falhou
+  mensagem?: any; // Atualizado para suportar JSON
+  erro?: string;
 }
 
 const Result = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Desestrutura os dados do state da navegação
   const { image, mensagem, erro: propErro } = (location.state || {}) as ResultState;
 
   const [selectedUpload, setSelectedUpload] = useState<UploadedFile | null>(null);
   const [uploads, setUploads] = useState<UploadedFile[]>([]);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
-  const [erroDisplay, setErroDisplay] = useState<string | null>(propErro || null); // Usa o erro passado via prop, se existir
+  const [erroDisplay, setErroDisplay] = useState<string | null>(propErro || null);
 
   useEffect(() => {
-    // Se a imagem foi passada, configure-a para exibição
     if (image) {
       const uploadedFile: UploadedFile = {
         file: image,
-        id: 'main-prototype', // ID único para a imagem principal
+        id: 'main-prototype',
         name: image.name || 'Protótipo Principal'
       };
-      setUploads([uploadedFile]); // Apenas a imagem principal
-      setSelectedUpload(uploadedFile); // Seleciona a imagem principal
+      setUploads([uploadedFile]);
+      setSelectedUpload(uploadedFile);
     } else {
       setErroDisplay("Nenhuma imagem de protótipo foi fornecida para análise.");
     }
 
-    // Processa a mensagem ou erro vindo da Analysis.tsx
     if (propErro) {
       setErroDisplay(propErro);
-      setSuggestions([]); // Limpa sugestões em caso de erro
+      setSuggestions([]);
     } else if (mensagem) {
-      // Se houver uma mensagem da IA, transforme-a em uma sugestão
-      setSuggestions([
-        {
-          id: 'ia-result-001',
-          category: 'visual', // Categoria padrão, pode ser aprimorado com IA no futuro
-          severity: 'média',  // Severidade padrão
-          title: 'Análise Geral de Acessibilidade (IA)',
-          description: mensagem,
-          improvement: 'Revise os pontos destacados pela IA para melhorar a acessibilidade do protótipo.',
+      try {
+        const items = (mensagem as any)?.items;
+        if (Array.isArray(items)) {
+          const parsedSuggestions: Suggestion[] = items.map((item: any, index: number) => ({
+            id: `ia-${index}`,
+            category: 'visual',
+            severity: (item.nivel || 'média').toLowerCase(),
+            title: `${item.criterio} – ${item.titulo}`,
+            description: item.descricao || '',
+            improvement: item.sugestao || '',
+          }));
+          setSuggestions(parsedSuggestions);
+          setErroDisplay(null);
+        } else {
+          setSuggestions([
+            {
+              id: 'ia-result-001',
+              category: 'visual',
+              severity: 'média',
+              title: 'Análise Geral de Acessibilidade (IA)',
+              description: typeof mensagem === 'string' ? mensagem : JSON.stringify(mensagem, null, 2),
+              improvement: 'Revise os pontos destacados pela IA para melhorar a acessibilidade do protótipo.',
+            }
+          ]);
+          setErroDisplay(null);
         }
-      ]);
-      setErroDisplay(null); // Limpa qualquer erro anterior se a mensagem da IA chegou
+      } catch (e) {
+        setSuggestions([]);
+        setErroDisplay("Erro ao processar os dados retornados pela IA.");
+      }
     } else {
       setSuggestions([]);
       setErroDisplay("Análise concluída, mas sem observações específicas da IA.");
     }
-  }, [location.state, image, mensagem, propErro]); // Dependências do useEffect
+  }, [location.state, image, mensagem, propErro]);
 
   const getCategoryIcon = (category: string) => {
     switch (category) {
@@ -119,22 +133,6 @@ const Result = () => {
     }
   };
 
-  // ===== BLOCO NOVO: PARSE DE CRITÉRIOS DA RESPOSTA IA (se vier em JSON/texto) =====
-  let criteriosIA: any[] = [];
-  try {
-    if (suggestions.length > 0 && suggestions[0].description) {
-      if (typeof suggestions[0].description === "string" && suggestions[0].description.trim().startsWith('[')) {
-        criteriosIA = JSON.parse(suggestions[0].description);
-      } else if (Array.isArray(suggestions[0].description)) {
-        criteriosIA = suggestions[0].description;
-      }
-    }
-  } catch (e) {
-    criteriosIA = [];
-  }
-  // ===== FIM DO BLOCO NOVO =====
-
-  // Se não houver imagem principal ou erro grave de dados, redireciona para o início
   if (!image && !erroDisplay) {
     navigate('/');
     return null;
@@ -147,12 +145,7 @@ const Result = () => {
           <div className="flex items-center gap-4">
             <Button
               variant="ghost"
-              //onClick={() => navigate('/analysis', { state: { image: image } })}
-
-              onClick={() => {
-                navigate('/'); // ou '/upload' se essa for sua rota de upload - Alterei para voltar
-              }}
-
+              onClick={() => navigate('/')}
               className="flex items-center gap-2"
             >
               <ArrowLeft className="w-4 h-4" />
@@ -173,7 +166,6 @@ const Result = () => {
       <main className="container mx-auto px-4 py-6">
         <div className="grid lg:grid-cols-3 gap-6 h-[calc(100vh-140px)]">
 
-          {/* Coluna para a imagem e talvez "outros uploads" */}
           <Card className="lg:col-span-2">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -211,7 +203,6 @@ const Result = () => {
             </CardContent>
           </Card>
 
-          {/* Observações Detalhadas (Sugestões da IA) */}
           <Card className="lg:col-span-1">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -229,10 +220,10 @@ const Result = () => {
                     </div>
                   )}
                   {!erroDisplay && suggestions.length === 0 && (
-                     <div className="bg-blue-100 text-blue-800 p-4 rounded-md border border-blue-300 text-center">
-                        <p className="font-medium">Nenhuma observação específica da IA foi retornada.</p>
-                        <p className="text-sm">Isso pode significar que o protótipo já está otimizado ou que houve um erro genérico na análise.</p>
-                     </div>
+                    <div className="bg-blue-100 text-blue-800 p-4 rounded-md border border-blue-300 text-center">
+                      <p className="font-medium">Nenhuma observação específica da IA foi retornada.</p>
+                      <p className="text-sm">Isso pode significar que o protótipo já está otimizado ou que houve um erro genérico na análise.</p>
+                    </div>
                   )}
                   {!erroDisplay && suggestions.length > 0 && suggestions.map((suggestion, index) => (
                     <div key={suggestion.id}>
@@ -252,12 +243,6 @@ const Result = () => {
                               </Badge>
                             </div>
                             <h4 className="font-semibold text-gray-900 mb-2">{suggestion.title}</h4>
-                            
-                            {/* <div className="bg-gray-50 border rounded-lg p-3 mb-3">
-                              <h5 className="font-medium text-gray-900 mb-1">Problema identificado:</h5>
-                              <p className="text-sm text-gray-600 whitespace-pre-wrap">{suggestion.description}</p>
-                            </div>
-                            */}    
                             <div className="bg-green-50 border border-green-200 rounded-lg p-3">
                               <h5 className="font-medium text-green-900 mb-1">Ação recomendada:</h5>
                               <p className="text-sm text-green-800 whitespace-pre-wrap">{suggestion.improvement}</p>
@@ -273,51 +258,6 @@ const Result = () => {
                       {index < suggestions.length - 1 && <Separator className="my-6" />}
                     </div>
                   ))}
-
-                  {/* ===== BLOCO NOVO: CARDS DOS CRITÉRIOS DE ACESSIBILIDADE ===== */}
-                  {criteriosIA.length > 0 && (
-                    <div className="space-y-4">
-                      <h4 className="font-bold text-lg text-blue-900 mt-4 mb-2">Critérios Detalhados da Acessibilidade</h4>
-                      <div className="grid gap-4">
-                        {criteriosIA.map((criterio, i) => (
-                          <div
-                            key={i}
-                            className={`rounded-lg shadow p-4 border-l-4 ${
-                              criterio.nivel === "Sucesso"
-                                ? "border-green-500 bg-green-50"
-                                : criterio.nivel === "Atenção"
-                                ? "border-yellow-500 bg-yellow-50"
-                                : "border-red-500 bg-red-50"
-                            }`}
-                          >
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className="font-semibold text-sm text-gray-700">{criterio.criterio} – {criterio.titulo}</span>
-                              {criterio.nivel === "Sucesso" && (
-                                <span className="text-green-600 font-medium">✔</span>
-                              )}
-                              {criterio.nivel === "Atenção" && (
-                                <span className="text-yellow-600 font-medium">⚠️</span>
-                              )}
-                              {criterio.nivel === "Erro" && (
-                                <span className="text-red-600 font-medium">✖</span>
-                              )}
-                            </div>
-                            <div className="text-gray-700 mb-1 text-sm">
-                              <strong>Status:</strong> {criterio.status}
-                            </div>
-                            <div className="text-gray-600 text-sm">{criterio.descricao}</div>
-                            {criterio.sugestao && (
-                              <div className="mt-2 text-xs text-blue-700 bg-blue-50 px-2 py-1 rounded">
-                                <strong>Sugestão:</strong> {criterio.sugestao}
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  {/* ===== FIM DO BLOCO NOVO ===== */}
-
                 </div>
               </ScrollArea>
             </CardContent>

@@ -3,7 +3,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Upload, Eye, Users, Lightbulb, ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
 
 const Index = () => {
   const [dragActive, setDragActive] = useState(false);
@@ -12,7 +11,6 @@ const Index = () => {
   const [uploadError, setUploadError] = useState<string | null>(null);
   const navigate = useNavigate();
 
-  // ✅ Limpeza ao carregar a página
   useEffect(() => {
     window.history.replaceState({}, document.title);
     localStorage.removeItem('imagemBase64');
@@ -59,52 +57,13 @@ const Index = () => {
     }
   };
 
-  const handleStartAnalysis = async () => {
+  const handleStartAnalysis = () => {
     if (!uploadedImage) {
       setUploadError("Nenhuma imagem selecionada para análise.");
       return;
     }
 
-    try {
-      setLoading(true);
-      setUploadError(null);
-
-      const apiUrl = "https://aiagent.alcantaran8n.com.br/webhook/acessibilidade";
-      const formData = new FormData();
-      formData.append('file', uploadedImage);
-
-      const response = await axios.post(apiUrl, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-        timeout: 30000,
-      });
-
-      const mensagemIA = response.data.mensagem || response.data.error || 'Análise concluída com sucesso.';
-      const erroAPI = response.data.error ? response.data.error : null;
-
-      navigate('/analysis', { state: { image: uploadedImage, mensagem: mensagemIA, erro: erroAPI } });
-
-    } catch (error: any) {
-      let errorMessage = "Erro ao enviar a imagem. Verifique a conexão com o servidor.";
-
-      if (axios.isAxiosError(error)) {
-        if (error.response) {
-          errorMessage = `Erro do servidor: ${error.response.status} - ${error.response.data?.message || JSON.stringify(error.response.data)}`;
-        } else if (error.request) {
-          errorMessage = "Sem resposta do servidor. Verifique se o n8n está rodando.";
-        } else {
-          errorMessage = `Erro na requisição: ${error.message}`;
-        }
-      } else {
-        errorMessage = `Erro inesperado: ${error.message}`;
-      }
-
-      setUploadError(errorMessage);
-      navigate('/analysis', {
-        state: { image: uploadedImage, erro: errorMessage }
-      });
-    } finally {
-      setLoading(false);
-    }
+    navigate('/analysis', { state: { image: uploadedImage } });
   };
 
   return (
