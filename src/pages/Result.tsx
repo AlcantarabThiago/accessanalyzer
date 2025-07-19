@@ -147,7 +147,12 @@ const Result = () => {
           <div className="flex items-center gap-4">
             <Button
               variant="ghost"
-              onClick={() => navigate('/analysis', { state: { image: image } })}
+              //onClick={() => navigate('/analysis', { state: { image: image } })}
+
+              onClick={() => {
+                navigate('/'); // ou '/upload' se essa for sua rota de upload - Alterei para voltar
+              }}
+
               className="flex items-center gap-2"
             >
               <ArrowLeft className="w-4 h-4" />

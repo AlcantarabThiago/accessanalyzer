@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Upload, Eye, Users, Lightbulb, ArrowRight } from 'lucide-react';
@@ -11,6 +11,15 @@ const Index = () => {
   const [loading, setLoading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const navigate = useNavigate();
+
+  // ✅ Limpeza ao carregar a página
+  useEffect(() => {
+    window.history.replaceState({}, document.title);
+    localStorage.removeItem('imagemBase64');
+    sessionStorage.removeItem('imagemBase64');
+    setUploadedImage(null);
+    setUploadError(null);
+  }, []);
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -30,9 +39,8 @@ const Index = () => {
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       const file = e.dataTransfer.files[0];
       if (file.type.startsWith('image/')) {
-        console.log("Imagem carregada via drag & drop:", file.name);
         setUploadedImage(file);
-        setUploadError(null); // Limpa o erro ao carregar nova imagem
+        setUploadError(null);
       } else {
         setUploadError("Formato de arquivo não suportado. Por favor, selecione uma imagem.");
       }
@@ -43,9 +51,8 @@ const Index = () => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       if (file.type.startsWith('image/')) {
-        console.log("Imagem carregada via botão:", file.name);
         setUploadedImage(file);
-        setUploadError(null); // Limpa o erro ao carregar nova imagem
+        setUploadError(null);
       } else {
         setUploadError("Formato de arquivo não suportado. Por favor, selecione uma imagem.");
       }
@@ -53,9 +60,7 @@ const Index = () => {
   };
 
   const handleStartAnalysis = async () => {
-    console.log("Botão Iniciar Análise clicado.");
     if (!uploadedImage) {
-      console.warn("Nenhuma imagem foi selecionada.");
       setUploadError("Nenhuma imagem selecionada para análise.");
       return;
     }
@@ -64,79 +69,39 @@ const Index = () => {
       setLoading(true);
       setUploadError(null);
 
-      // --- NOVOS LOGS E CORREÇÃO DE URL ---
       const apiUrl = "https://aiagent.alcantaran8n.com.br/webhook/acessibilidade";
-      console.log("Iniciando upload para URL:", apiUrl);
-      console.log("Nome do arquivo a ser enviado:", uploadedImage.name);
-      console.log("Tamanho do arquivo:", uploadedImage.size, "bytes");
-      console.log("Tipo do arquivo:", uploadedImage.type);
-
-
       const formData = new FormData();
       formData.append('file', uploadedImage);
 
-      // Log FormData content (for debugging only, remove in production as it can be large)
-      // for (let [key, value] of formData.entries()) {
-      //   console.log(`${key}:`, value);
-      // }
-
       const response = await axios.post(apiUrl, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
-        // Adicionar um timeout pode ajudar a identificar problemas de conexão que travam
-        timeout: 30000, // 30 segundos
+        timeout: 30000,
       });
 
-      console.log("Resposta completa da API recebida:", response);
-      console.log("Dados da resposta da IA:", response.data);
+      const mensagemIA = response.data.mensagem || response.data.error || 'Análise concluída com sucesso.';
+      const erroAPI = response.data.error ? response.data.error : null;
 
-      // O n8n retorna "mensagem" se for a resposta da IA, ou pode ser "erro" se houver um erro no workflow
-      const mensagemIA = response.data.mensagem || response.data.error || 'Análise concluída com sucesso (sem mensagem específica da IA).';
-      const erroAPI = response.data.error ? response.data.error : null; // Captura erro se o n8n o retornar no corpo
-
-      console.log("Navegando para tela de análise com imagem, mensagemIA e erroAPI:", uploadedImage.name, mensagemIA, erroAPI);
-      
-      // Passa a imagem, a mensagem da IA e o erro (se houver, do lado do n8n)
       navigate('/analysis', { state: { image: uploadedImage, mensagem: mensagemIA, erro: erroAPI } });
 
-    } catch (error: any) { // Tipagem : any para capturar erros de axios de forma mais flexível
-      console.error("Erro ao enviar a imagem (detalhes):", error);
-      
+    } catch (error: any) {
       let errorMessage = "Erro ao enviar a imagem. Verifique a conexão com o servidor.";
 
-      if (axios.isAxiosError(error)) { // Verifica se é um erro do Axios
+      if (axios.isAxiosError(error)) {
         if (error.response) {
-          // O servidor respondeu com um status de erro (ex: 4xx, 5xx)
-          console.error("ERRO RESPONSE (servidor respondeu):", error.response.data);
-          console.error("STATUS DO ERRO:", error.response.status);
-          console.error("HEADERS DO ERRO:", error.response.headers);
-          errorMessage = `Erro do servidor: ${error.response.status} - ${error.response.data?.message || JSON.stringify(error.response.data) || error.response.statusText}`;
+          errorMessage = `Erro do servidor: ${error.response.status} - ${error.response.data?.message || JSON.stringify(error.response.data)}`;
         } else if (error.request) {
-          // A requisição foi feita, mas nenhuma resposta foi recebida
-          // 'error.request' é uma instância de XMLHttpRequest no navegador
-          console.error("ERRO REQUEST (sem resposta do servidor):", error.request);
-          errorMessage = "Sem resposta do servidor. Verifique se o n8n está rodando e acessível.";
+          errorMessage = "Sem resposta do servidor. Verifique se o n8n está rodando.";
         } else {
-          // Algo aconteceu na configuração da requisição que disparou um erro
-          console.error("ERRO AXIOS (configuração da requisição):", error.message);
-          errorMessage = `Erro na configuração da requisição: ${error.message}`;
+          errorMessage = `Erro na requisição: ${error.message}`;
         }
       } else {
-        // Erro não é do Axios (ex: erro de rede genérico, SyntaxError em JSON)
-        console.error("ERRO GENÉRICO:", error.message);
         errorMessage = `Erro inesperado: ${error.message}`;
       }
-      
-      setUploadError(errorMessage);
-      
-      // Se houver um erro, ainda podemos navegar para a tela de análise para exibir o erro lá
-      // embora o erro já esteja visível aqui. Isso garante que o fluxo continue.
-      navigate('/analysis', { 
-          state: { 
-              image: uploadedImage, 
-              erro: errorMessage // Passa o erro para a próxima tela
-          } 
-      });
 
+      setUploadError(errorMessage);
+      navigate('/analysis', {
+        state: { image: uploadedImage, erro: errorMessage }
+      });
     } finally {
       setLoading(false);
     }
@@ -169,7 +134,6 @@ const Index = () => {
 
       <main className="container mx-auto px-4 py-12">
         <div className="max-w-4xl mx-auto">
-          {/* Hero Section */}
           <div className="text-center mb-12">
             <h2 className="text-5xl font-bold text-gray-900 mb-6">
               Torne seus protótipos
@@ -204,7 +168,6 @@ const Index = () => {
             </div>
           </div>
 
-          {/* Upload Area */}
           <Card className="mb-8 border-2 border-dashed border-gray-300 hover:border-blue-400 transition-all duration-300 shadow-lg">
             <CardContent className="p-12">
               <div
@@ -233,8 +196,8 @@ const Index = () => {
                       <Button
                         variant="outline"
                         onClick={() => {
-                            setUploadedImage(null);
-                            setUploadError(null); // Limpa o erro ao trocar a imagem
+                          setUploadedImage(null);
+                          setUploadError(null);
                         }}
                         className="px-6 py-3"
                       >
@@ -244,7 +207,7 @@ const Index = () => {
                         type="button"
                         onClick={handleStartAnalysis}
                         className="bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-700 hover:to-green-700 px-8 py-3 text-lg"
-                        disabled={loading} // Desabilita o botão enquanto carrega
+                        disabled={loading}
                       >
                         {loading ? 'Analisando...' : 'Iniciar Análise'}
                         <ArrowRight className="w-5 h-5 ml-2" />

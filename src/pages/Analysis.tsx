@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react'; // Adicione useEffect aqui
-import { useNavigate, useLocation } from 'react-router-dom'; // Adicione useLocation aqui
+import { useState, useEffect, useRef } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -14,25 +14,14 @@ import {
   Scan
 } from 'lucide-react';
 
-// Importe UploadImagem se estiver sendo usado, embora não pareça neste componente diretamente
-// import UploadImagem from '@/components/ui/UploadImagem';
-
 const Analysis = () => {
   const navigate = useNavigate();
-  const location = useLocation(); // Use useLocation para acessar o estado passado
+  const location = useLocation();
   const [analysisStep, setAnalysisStep] = useState(0);
   const [progress, setProgress] = useState(0);
   const [currentAnalysis, setCurrentAnalysis] = useState('');
   const [imagemEnviada, setImagemEnviada] = useState<File | null>(null);
-
-  // Pega a imagem passada via state da navegação
-  useEffect(() => {
-    if (location.state?.image) {
-      setImagemEnviada(location.state.image);
-      // Inicia a simulação de análise assim que a imagem for carregada
-      handleAnalysisStart(location.state.image);
-    }
-  }, [location.state?.image]); // Dependência na imagem do estado da location
+  const hasAnalyzed = useRef(false); // <-- controle de repetição
 
   const analysisSteps = [
     { label: 'Carregando imagem...', description: 'Processando o protótipo enviado' },
@@ -44,10 +33,15 @@ const Analysis = () => {
     { label: 'Finalizando análise...', description: 'Preparando relatório completo' }
   ];
 
-  const handleAnalysisStart = async (image: File) => {
-    // Não precisa de setImagemEnviada(image) aqui novamente, pois já está no useEffect
+  useEffect(() => {
+    if (location.state?.image && !hasAnalyzed.current) {
+      setImagemEnviada(location.state.image);
+      hasAnalyzed.current = true; // evita reanálise
+      handleAnalysisStart(location.state.image);
+    }
+  }, [location.state]);
 
-    // Simula etapas com barra de progresso
+  const handleAnalysisStart = async (image: File) => {
     for (let i = 0; i < analysisSteps.length; i++) {
       setAnalysisStep(i);
       setCurrentAnalysis(analysisSteps[i].label);
@@ -55,27 +49,17 @@ const Analysis = () => {
       await new Promise((r) => setTimeout(r, 800 + Math.random() * 600));
     }
 
-    // AQUI É O PONTO CHAVE: Navega para a tela de resultados APÓS a simulação de progresso.
-    // A chamada à API do n8n pode ser feita de forma assíncrona em segundo plano
-    // ou removida temporariamente se não for necessária para a navegação imediata.
-
     let mensagemFinal = '';
     let erroFinal = '';
 
     try {
-        // Cria um FormData para enviar o arquivo
-        const formData = new FormData();
-        formData.append('file', image, image.name); // 'file' é o nome do campo binário que o n8n espera
+      const formData = new FormData();
+      formData.append('file', image, image.name);
 
-        const response = await fetch("https://aiagent.alcantaran8n.com.br/webhook/acessibilidade", {
+      const response = await fetch("https://aiagent.alcantaran8n.com.br/webhook/acessibilidade", {
         method: "POST",
-        // Com FormData, o navegador define o Content-Type automaticamente (multipart/form-data)
-        // Você NÃO deve definir 'Content-Type': 'multipart/form-data' manualmente aqui,
-        // pois o navegador precisa adicionar o 'boundary' correto.
-        // Se você usar axios, é similar. Com fetch, apenas remova o header.
-        // headers: { 'Content-Type': 'multipart/form-data' }, // <--- REMOVA ESTA LINHA OU COMENTE
-         body: formData // <--- ENVIE O FORMDATA AQUI
-     });
+        body: formData
+      });
 
       if (!response.ok) {
         throw new Error(`Erro na API: ${response.status}`);
@@ -88,7 +72,6 @@ const Analysis = () => {
       erroFinal = error.message || "Erro desconhecido";
     }
 
-    // Navega para a tela de resultados com as informações (mesmo que a API tenha falhado)
     navigate("/result", {
       state: {
         image,
@@ -97,14 +80,6 @@ const Analysis = () => {
       }
     });
   };
-
-  // Remova a função handleUploadSuccess se ela não estiver sendo usada diretamente em um <UploadImagem> aqui.
-  // Pelo que entendi do seu código, a imagem já é passada para essa tela via `Maps` do componente `Result.tsx` (ou o que seja o componente de upload).
-  // Se `UploadImagem` é um componente que faz o upload e chama `handleUploadSuccess` dentro de `Analysis.tsx`,
-  // então você precisaria de um `useEffect` para iniciar o `handleAnalysisStart` quando a imagem for definida.
-  // Pelo seu anexo `image_6e699c.png` (a tela de upload), parece que o upload acontece em outra tela.
-  // Assumindo que a imagem é passada via `Maps` para `Analysis.tsx`:
-
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50">
@@ -117,7 +92,7 @@ const Analysis = () => {
               className="flex items-center gap-2"
             >
               <ArrowLeft className="w-4 h-4" />
-              Voltar
+              Voltar para Upload
             </Button>
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-green-600 rounded-lg flex items-center justify-center">
@@ -182,13 +157,6 @@ const Analysis = () => {
                     </div>
                   )}
                 </div>
-                {imagemEnviada && (
-                  <div className="mt-4 text-sm text-gray-600">
-                    <p><strong>Nome:</strong> {imagemEnviada.name}</p>
-                    <p><strong>Tamanho:</strong> {Math.round(imagemEnviada.size / 1024)}KB</p>
-                    <p><strong>Formato:</strong> {imagemEnviada.type}</p>
-                  </div>
-                )}
               </CardContent>
             </Card>
 
@@ -231,44 +199,6 @@ const Analysis = () => {
               </CardContent>
             </Card>
           </div>
-
-          <Card className="mt-8">
-            <CardHeader>
-              <CardTitle>Categorias de Acessibilidade</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid md:grid-cols-4 gap-4">
-                <div className="flex items-center gap-3 p-4 bg-blue-50 rounded-lg">
-                  <Eye className="w-6 h-6 text-blue-600" />
-                  <div>
-                    <p className="font-medium text-blue-900">Visual</p>
-                    <p className="text-sm text-blue-600">Contraste, fontes</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3 p-4 bg-green-50 rounded-lg">
-                  <Users className="w-6 h-6 text-green-600" />
-                  <div>
-                    <p className="font-medium text-green-900">Auditiva</p>
-                    <p className="text-sm text-green-600">Legendas, áudio</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3 p-4 bg-purple-50 rounded-lg">
-                  <Brain className="w-6 h-6 text-purple-600" />
-                  <div>
-                    <p className="font-medium text-purple-900">Cognitiva</p>
-                    <p className="text-sm text-purple-600">Clareza, estrutura</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3 p-4 bg-orange-50 rounded-lg">
-                  <Zap className="w-6 h-6 text-orange-600" />
-                  <div>
-                    <p className="font-medium text-orange-900">Motora</p>
-                    <p className="text-sm text-orange-600">Navegação, foco</p>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
         </div>
       </main>
     </div>
