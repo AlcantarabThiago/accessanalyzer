@@ -14,7 +14,6 @@ import {
   CheckCircle,
   XCircle,
   Zap,
-  Upload,
   Image as ImageIcon
 } from 'lucide-react';
 
@@ -36,7 +35,7 @@ interface UploadedFile {
 
 interface ResultState {
   image?: File;
-  mensagem?: any; // Atualizado para suportar JSON
+  mensagem?: any;
   erro?: string;
 }
 
@@ -69,9 +68,9 @@ const Result = () => {
       setSuggestions([]);
     } else if (mensagem) {
       try {
-        const items = (mensagem as any)?.items;
-        if (Array.isArray(items)) {
-          const parsedSuggestions: Suggestion[] = items.map((item: any, index: number) => ({
+        const achados = (mensagem as any)?.achados;
+        if (Array.isArray(achados)) {
+          const parsedSuggestions: Suggestion[] = achados.map((item: any, index: number) => ({
             id: `ia-${index}`,
             category: 'visual',
             severity: (item.nivel || 'média').toLowerCase(),
