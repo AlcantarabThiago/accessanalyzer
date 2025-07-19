@@ -68,8 +68,8 @@ const Result = () => {
       setSuggestions([]);
     } else if (mensagem) {
       try {
-        const achados = (mensagem as any)?.achados;
-        if (Array.isArray(achados)) {
+        const achados = mensagem?.achados;
+        if (Array.isArray(achados) && achados.length > 0) {
           const parsedSuggestions: Suggestion[] = achados.map((item: any, index: number) => ({
             id: `ia-${index}`,
             category: 'visual',
@@ -83,7 +83,7 @@ const Result = () => {
         } else {
           setSuggestions([
             {
-              id: 'ia-result-001',
+              id: 'ia-default',
               category: 'visual',
               severity: 'média',
               title: 'Análise Geral de Acessibilidade (IA)',
@@ -142,11 +142,7 @@ const Result = () => {
       <header className="border-b bg-white/80 backdrop-blur-sm">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center gap-4">
-            <Button
-              variant="ghost"
-              onClick={() => navigate('/')}
-              className="flex items-center gap-2"
-            >
+            <Button variant="ghost" onClick={() => navigate('/')} className="flex items-center gap-2">
               <ArrowLeft className="w-4 h-4" />
               Voltar para Análise
             </Button>
@@ -164,7 +160,6 @@ const Result = () => {
 
       <main className="container mx-auto px-4 py-6">
         <div className="grid lg:grid-cols-3 gap-6 h-[calc(100vh-140px)]">
-
           <Card className="lg:col-span-2">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -261,7 +256,6 @@ const Result = () => {
               </ScrollArea>
             </CardContent>
           </Card>
-
         </div>
       </main>
     </div>
